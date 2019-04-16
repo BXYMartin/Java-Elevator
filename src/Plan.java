@@ -3,52 +3,51 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Vector;
 
-import static java.lang.Math.abs;
-
 public class Plan {
     private HashMap<Integer, Vector<Integer>> floorArrival = new HashMap<>();
     private HashMap<Integer, Vector<Integer>> floorBoard = new HashMap<>();
     private LinkedList<Integer> plan = new LinkedList<>();
-    private HashMap<Integer, Request> back = new HashMap<>();
-    private int on = 0;
-    private int index = 0;
 
-    public void off() {
-        on--;
-    }
-
-    public int current() {
-        return on;
-    }
-
-    public Request request(int id) {
-        return back.get(id);
-    }
-
-    public void put(Request p) {
-        if (p != null) {
-            back.put(p.getPersonId(), p);
-        }
-    }
-
-    public void next() {
-        index++;
-    }
-
-    public Plan(Dispatch dispatch) {
-        int src = dispatch.getMain().getFromFloor();
-        int dst = dispatch.getMain().getToFloor();
-        put(dispatch.getBack());
+    public Plan(int src, int dst, int num) {
         plan.add(src);
         plan.add(dst);
         Vector<Integer> out = new Vector<>();
-        int num = dispatch.getMain().getPersonId();
         out.add(num);
         floorArrival.put(dst, out);
         Vector<Integer> in = new Vector<>();
         in.add(num);
         floorBoard.put(src, in);
-        on++;
+    }
+
+    public int calcRoute(int src, int dst) {
+        int cost = 0;
+        if ((plan.getLast() - plan.getFirst()) * (dst - src) > 0) {
+            if ((dst - src) > 0) {
+                if (dst > plan.getLast()) {
+                    cost += dst - plan.getLast();
+                }
+                if (src < plan.getFirst()) {
+                    cost += plan.getFirst() - src;
+                }
+            }
+            if ((dst - src) < 0) {
+                if (dst < plan.getLast()) {
+                    cost += plan.getLast() - dst;
+                }
+                if (src > plan.getFirst()) {
+                    cost += src - plan.getFirst();
+                }
+            }
+            if (!plan.contains(src)) {
+                cost += 1;
+            }
+            if (!plan.contains(dst)) {
+                cost += 1;
+            }
+        } else {
+            return -1;
+        }
+        return cost;
     }
 
     private void insert(HashMap<Integer, Vector<Integer>> target
@@ -57,7 +56,8 @@ public class Plan {
             Vector<Integer> passenger = new Vector<>();
             passenger.add(id);
             target.put(floor, passenger);
-        } else {
+        }
+        else {
             target.get(floor).add(id);
         }
     }
@@ -77,74 +77,23 @@ public class Plan {
         );
         insert(floorArrival, dst, num);
         insert(floorBoard, src, num);
-        on++;
     }
 
-    public int get() {
-        return plan.get(index);
+    public int getIndex(int i) {
+        return plan.get(i);
     }
 
-    public int getLast() {
-        return plan.getLast();
+    public Vector<Integer> getOutId(int i) {
+        return floorArrival.get(plan.get(i));
     }
 
-    public int eta(char e) {
-        int f = 0;
-        switch (e) {
-            case 'A':
-                f += 400 * abs(getLast() - get());
-                break;
-            case 'B':
-                f += 500 * abs(getLast() - get());
-                break;
-            case 'C':
-                f += 600 * abs(getLast() - get());
-                break;
-            default:
-                return 0;
-        }
-        for (Integer i:plan) {
-            if ((direction() > 0 && i > get()) ||
-                    (direction() < 0 && i < get())) {
-                f += 400;
-            }
-        }
-        return f;
+    public Vector<Integer> getInId(int i) {
+        return floorBoard.get(plan.get(i));
     }
 
-    public Vector<Integer> getOutId() {
-        return floorArrival.get(plan.get(index));
-    }
-
-    public Vector<Integer> getInId() {
-        return floorBoard.get(plan.get(index));
-    }
-
-    public boolean over() {
-        if (index == plan.size() - 1) {
+    public boolean over(int i) {
+        if (i == plan.size() - 1) {
             return true;
-        }
-        return false;
-    }
-
-    public int direction() {
-        return plan.getLast() - plan.getFirst();
-    }
-
-    private int direction(Request p) {
-        return p.getToFloor() - p.getFromFloor();
-    }
-
-    public boolean merge(Dispatch dispatch, int floor, boolean arrive) {
-        Request p = dispatch.getMain();
-        if (direction() * direction(p) > 0) {
-            if ((arrive && index == 0) ||
-                    (direction() > 0 && floor <= p.getFromFloor()) ||
-                    (direction() < 0 && floor >= p.getFromFloor())) {
-                insertRoute(p.getFromFloor(), p.getToFloor(), p.getPersonId());
-                put(dispatch.getBack());
-                return true;
-            }
         }
         return false;
     }

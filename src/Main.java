@@ -1,22 +1,33 @@
 import com.oocourse.TimableOutput;
+import com.oocourse.elevator1.ElevatorInput;
+import com.oocourse.elevator1.PersonRequest;
+
+import java.io.IOException;
 
 public class Main {
 
     public static void main(String[] args) {
         TimableOutput.initStartTimestamp();
+        ElevatorInput elevatorInput = new ElevatorInput(System.in);
         Scheduler scheduler = new Scheduler();
-        Passenger passenger = new Passenger(scheduler);
-        Printer printer = new Printer();
-
-        passenger.start();
-        SmartElevator elevator0 = new SmartElevator(scheduler, printer,
-                'A', 6, 400);
-        elevator0.start();
-        SmartElevator elevator1 = new SmartElevator(scheduler, printer,
-                'B', 8, 500);
-        elevator1.start();
-        SmartElevator elevator2 = new SmartElevator(scheduler, printer,
-                'C', 7, 600);
-        elevator2.start();
+        smartElevator elevator = new smartElevator(scheduler, "Elevator 1");
+        elevator.start();
+        while (true) {
+            PersonRequest request = elevatorInput.nextPersonRequest();
+            // when request == null
+            // it means there are no more lines in stdin
+            if (request == null) {
+                scheduler.smartAdd(request);
+                break;
+            } else {
+                // a new valid request
+                scheduler.smartAdd(request);
+            }
+        }
+        try {
+            elevatorInput.close();
+        } catch (IOException e) {
+            System.out.println("IO Error!");
+        }
     }
 }
